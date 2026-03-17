@@ -135,6 +135,11 @@ verify_sha256() {
     [[ "${actual}" == "${expected}" ]]
 }
 
+# FIX #5: awk regex এ dot escape করার জন্য helper function
+escape_for_awk_regex() {
+    printf '%s' "$1" | sed 's/\./\\./g'
+}
+
 setup_environment() {
     : >"${LOG_FILE}"
     TMP_DIR="$(mktemp -d)"
@@ -152,9 +157,16 @@ setup_environment() {
 detect_wsl2() {
     [[ -f /proc/version ]] || die "Cannot verify WSL."
     grep -qi microsoft /proc/version || die "This installer supports WSL only."
-    if ! grep -qiE 'WSL2|microsoft-standard-WSL2' /proc/sys/kernel/osrelease && ! uname -r | grep -qi microsoft; then
-        die "WSL2 is required."
+
+    # FIX: /proc/sys/kernel/osrelease এর existence আগে চেক করা হচ্ছে
+    local is_wsl2=0
+    if [[ -f /proc/sys/kernel/osrelease ]] && grep -qiE 'WSL2|microsoft-standard-WSL2' /proc/sys/kernel/osrelease 2>/dev/null; then
+        is_wsl2=1
+    elif uname -r | grep -qi microsoft; then
+        is_wsl2=1
     fi
+
+    [[ "${is_wsl2}" -eq 1 ]] || die "WSL2 is required."
 }
 
 detect_os() {
@@ -225,7 +237,12 @@ add_nginx_repo() {
 
 add_mysql_repo() {
     local keyring="/etc/apt/keyrings/mysql.gpg"
-    fetch_text "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023" | as_root gpg --dearmor -o "${keyring}"
+
+    as_root rm -f "${keyring}"
+    as_root rm -f /etc/apt/sources.list.d/mysql.list
+
+    fetch_text "https://repo.mysql.com/RPM-GPG-KEY-mysql-2025" | as_root gpg --dearmor -o "${keyring}"
+
     printf 'deb [signed-by=%s] https://repo.mysql.com/apt/%s/ %s %s\n' \
         "${keyring}" "${DISTRO_ID}" "${DISTRO_CODENAME}" "${MYSQL_COMPONENT}" | as_root tee /etc/apt/sources.list.d/mysql.list >/dev/null
 }
@@ -328,8 +345,11 @@ install_node() {
 }
 
 install_nginx() {
+    # FIX #5: awk regex এ dot escape করা হয়েছে
+    local escaped_prefix
+    escaped_prefix="$(escape_for_awk_regex "${NGINX_VERSION_PREFIX}")"
     local pkg_version=""
-    pkg_version="$(apt-cache madison nginx | awk -v p="${NGINX_VERSION_PREFIX}" '$3 ~ "^" p {print $3; exit}')"
+    pkg_version="$(apt-cache madison nginx | awk -v p="${escaped_prefix}" '$3 ~ "^" p {print $3; exit}')"
     [[ -n "${pkg_version}" ]] || die "Could not find nginx version prefix ${NGINX_VERSION_PREFIX} in repo."
     apt_install "nginx=${pkg_version}"
 }
@@ -348,10 +368,13 @@ install_mysql() {
 }
 
 install_redis() {
+    # FIX #5: awk regex এ dot escape করা হয়েছে
+    local escaped_prefix
+    escaped_prefix="$(escape_for_awk_regex "${REDIS_VERSION_PREFIX}")"
     local redis_pkg_version=""
     local tools_pkg_version=""
-    redis_pkg_version="$(apt-cache madison redis | awk -v p="${REDIS_VERSION_PREFIX}" '$3 ~ "^" p {print $3; exit}')"
-    tools_pkg_version="$(apt-cache madison redis-tools | awk -v p="${REDIS_VERSION_PREFIX}" '$3 ~ "^" p {print $3; exit}')"
+    redis_pkg_version="$(apt-cache madison redis | awk -v p="${escaped_prefix}" '$3 ~ "^" p {print $3; exit}')"
+    tools_pkg_version="$(apt-cache madison redis-tools | awk -v p="${escaped_prefix}" '$3 ~ "^" p {print $3; exit}')"
     [[ -n "${redis_pkg_version}" && -n "${tools_pkg_version}" ]] || die "Could not find Redis ${REDIS_VERSION_PREFIX}.x in official repo."
     apt_install "redis=${redis_pkg_version}" "redis-tools=${tools_pkg_version}"
 }
@@ -379,7 +402,9 @@ install_phpmyadmin() {
     local url="https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VERSION}/phpMyAdmin-${PHPMYADMIN_VERSION}-all-languages.tar.gz"
     local archive="${TMP_DIR}/phpmyadmin.tar.gz"
     local dir="/usr/share/phpmyadmin"
-    local sha_url="https://www.phpmyadmin.net/files/${PHPMYADMIN_VERSION}/phpMyAdmin-${PHPMYADMIN_VERSION}-all-languages.tar.gz.sha256"
+
+    # FIX #4: সঠিক SHA256 URL ব্যবহার করা হয়েছে (www.phpmyadmin.net/files/ → files.phpmyadmin.net)
+    local sha_url="https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VERSION}/phpMyAdmin-${PHPMYADMIN_VERSION}-all-languages.tar.gz.sha256"
     local expected=""
 
     download "${url}" "${archive}"
@@ -417,7 +442,8 @@ set_ini_value() {
 configure_php() {
     set_ini_value "${PHP_INI_CLI}" "memory_limit" "1024M"
     set_ini_value "${PHP_INI_CLI}" "upload_max_filesize" "5120M"
-    set_ini_value "${PHP_INI_CLI}" "post_max_size" "512M"
+    # FIX #1: post_max_size অবশ্যই upload_max_filesize এর সমান বা বড় হতে হবে
+    set_ini_value "${PHP_INI_CLI}" "post_max_size" "5120M"
     set_ini_value "${PHP_INI_CLI}" "max_input_vars" "3000"
     set_ini_value "${PHP_INI_CLI}" "date.timezone" "${PHP_TIMEZONE}"
     set_ini_value "${PHP_INI_CLI}" "display_errors" "On"
@@ -429,7 +455,8 @@ configure_php() {
 
     set_ini_value "${PHP_INI_FPM}" "memory_limit" "1024M"
     set_ini_value "${PHP_INI_FPM}" "upload_max_filesize" "5120M"
-    set_ini_value "${PHP_INI_FPM}" "post_max_size" "512M"
+    # FIX #1: post_max_size অবশ্যই upload_max_filesize এর সমান বা বড় হতে হবে
+    set_ini_value "${PHP_INI_FPM}" "post_max_size" "5120M"
     set_ini_value "${PHP_INI_FPM}" "max_input_vars" "3000"
     set_ini_value "${PHP_INI_FPM}" "date.timezone" "${PHP_TIMEZONE}"
     set_ini_value "${PHP_INI_FPM}" "display_errors" "On"
@@ -513,7 +540,7 @@ EOF3
 wait_for_mysql() {
     local i
     for i in $(seq 1 60); do
-        if mysqladmin ping --protocol=socket -uroot >/dev/null 2>&1 || \
+        if as_root mysqladmin ping --protocol=socket -uroot >/dev/null 2>&1 || \
            mysqladmin ping --protocol=tcp -h127.0.0.1 -uroot --password='' >/dev/null 2>&1; then
             return 0
         fi
@@ -525,7 +552,8 @@ wait_for_mysql() {
 configure_mysql() {
     wait_for_mysql || die "MySQL did not become ready in time."
 
-    mysql --protocol=socket -uroot <<'SQL'
+    # FIX #3: mysql socket connection এ as_root ব্যবহার করা হয়েছে
+    as_root mysql --protocol=socket -uroot <<'SQL'
 ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '';
 CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED WITH caching_sha2_password BY '';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;
@@ -536,9 +564,11 @@ SQL
 CREATE DATABASE IF NOT EXISTS wslstack CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 SQL
 
+    # FIX #2: default_authentication_plugin MySQL 8.4 তে remove করা হয়েছে।
+    # authentication_policy ব্যবহার করা হয়েছে (MySQL 8.0.27+ এ valid)।
     cat <<'EOF4' | as_root tee /etc/mysql/conf.d/wslstack.cnf >/dev/null
 [mysqld]
-default_authentication_plugin = caching_sha2_password
+authentication_policy = caching_sha2_password,
 bind-address = 127.0.0.1
 mysqlx = 0
 sql_mode = STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
