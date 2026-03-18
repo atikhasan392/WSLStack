@@ -1,4 +1,4 @@
-# WSLStack – Ubuntu LAMP Dev Environment Setup
+# WSLStack – Ubuntu Laravel Dev Environment Setup
 
 A fully automated development environment setup script for Ubuntu 24.04 (WSL or native), designed for modern PHP/Laravel development.
 
