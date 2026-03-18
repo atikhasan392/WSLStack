@@ -88,29 +88,28 @@ MYSQL_DEB="mysql-apt-config_0.8.36-1_all.deb"
 wget "https://dev.mysql.com/get/$MYSQL_DEB" -O "/tmp/$MYSQL_DEB"
 DEBIAN_FRONTEND=noninteractive dpkg -i "/tmp/$MYSQL_DEB"
 rm "/tmp/$MYSQL_DEB"
+
 apt update
 apt install -y mysql-server
+
 systemctl enable mysql
 systemctl start mysql
-systemctl status mysql --no-pager || true
 
-# MySQL User Setup (For phpMyAdmin)
+# MySQL User Setup
 DB_USER="admin"
 DB_PASS="Admin@1234"
- 
-mysql -u root <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
-CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
+
+mysql <<EOF
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
 EOF
 
 # =====================================================================
 # Apache + PHP-FPM Integration
 # =====================================================================
 apt install -y apache2
-a2enmod rewrite
-a2enmod proxy_fcgi setenvif
+a2enmod rewrite proxy_fcgi setenvif
 a2enconf php8.5-fpm
 systemctl enable apache2
 systemctl restart apache2
@@ -118,16 +117,12 @@ systemctl restart apache2
 # =====================================================================
 # phpMyAdmin
 # =====================================================================
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean true"             | debconf-set-selections
-echo "phpmyadmin phpmyadmin/app-password-confirm password ${DB_PASS}"  | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${DB_PASS}"      | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/app-pass password ${DB_PASS}"        | debconf-set-selections
 echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
 DEBIAN_FRONTEND=noninteractive apt install -y phpmyadmin
 
-# phpMyAdmin Auto-Login Config
+# phpMyAdmin Auto-login Config
 PMA_CONFIG="/etc/phpmyadmin/conf.d/autologin.php"
- 
+
 cat > "$PMA_CONFIG" <<EOF
 <?php
 \$cfg['Servers'][1]['auth_type']       = 'config';
@@ -135,35 +130,33 @@ cat > "$PMA_CONFIG" <<EOF
 \$cfg['Servers'][1]['password']        = '${DB_PASS}';
 \$cfg['Servers'][1]['AllowNoPassword'] = false;
 EOF
- 
+
 chmod 640 "$PMA_CONFIG"
 chown root:www-data "$PMA_CONFIG"
- 
+
 systemctl restart apache2
 
 # =====================================================================
 # DONE
 # =====================================================================
 echo ""
-echo "============================================"
+echo "===================================================="
 echo " Installation Complete!"
-echo "============================================"
+echo "===================================================="
 echo " PHP       : $(php -v | head -1)"
 echo " Composer  : $(composer --version 2>/dev/null)"
 echo " MySQL     : $(mysql --version)"
 echo " Apache    : $(apache2 -v 2>/dev/null | head -1)"
-echo "============================================"
+echo "===================================================="
 echo " phpMyAdmin: http://localhost/phpmyadmin"
-echo "--------------------------------------------"
-echo " MySQL root  → user: root  | pass: ${DB_PASS}"
-echo " MySQL admin → user: admin | pass: ${DB_PASS}"
-echo "--------------------------------------------"
+echo "-----------------------------------------------"
+echo " MySQL admin -> user: admin | pass: ${DB_PASS}"
+echo "-----------------------------------------------"
 echo " Use in Laravel .env:"
 echo "   DB_USERNAME=admin"
 echo "   DB_PASSWORD=${DB_PASS}"
-echo "============================================"
+echo "===================================================="
 echo ""
-echo " Node.js and Bun have been installed for user '$REAL_USER'."
-echo " Restart the terminal or run:"
-echo "   source ~/.bashrc"
+echo " Node.js and Bun installed for '$REAL_USER'"
+echo " Run: source ~/.bashrc"
 echo ""
