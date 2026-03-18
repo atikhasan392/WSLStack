@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# =====================================================================
-# Ubuntu 24.04 – LAMP Dev Setup
-# PHP 8.5, MySQL 8.4, Apache, phpMyAdmin, Node.js 24, Bun, Composer
-# =====================================================================
+# =======================================================================
+# Ubuntu 24.04 – Laravel Dev Setup
+# PHP 8.5, MySQL 8.4, Apache, phpMyAdmin, Node.js 24, Bun, Composer, Git
+# =======================================================================
 # Usage:
 #   chmod +x install.sh
 #   sed -i 's/\r$//' install.sh
@@ -135,6 +135,13 @@ chmod 640 "$PMA_CONFIG"
 chown root:www-data "$PMA_CONFIG"
 
 systemctl restart apache2
+
+# =====================================================================
+# Git
+# =====================================================================
+apt-get install git
+add-apt-repository ppa:git-core/ppa
+apt update; apt install git
 
 # =====================================================================
 # DONE
