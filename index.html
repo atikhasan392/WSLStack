@@ -681,7 +681,7 @@ Gemini said
 
         <script>
             function copyInstallCommand() {
-                const cmd = "bash <(curl -fsSL https://wslstack.pages.dev/install.sh)";
+                const cmd = "sudo bash <(curl -fsSL https://wslstack.pages.dev/install.sh)";
                 navigator.clipboard.writeText(cmd).then(() => {
                     alert("Command copied to clipboard!");
                 });
