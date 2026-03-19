@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Guide | WSLStack Documentation</title>
+        <meta name="description" content="Open-source one-command Laravel development environment setup for WSL2 (Debian/Ubuntu). PHP 8.5, Composer, Node.js LTS, Nginx, and MySQL.">
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+            body {
+                background-color: #020617;
+                color: #f1f5f9;
+                font-family: 'Inter', sans-serif;
+            }
+
+            .code-block {
+                background: #0f172a;
+                border: 1px solid #1e293b;
+                padding: 1.25rem;
+                border-radius: 0.75rem;
+                font-family: 'JetBrains Mono', monospace;
+                color: #38bdf8;
+                font-size: 0.875rem;
+                position: relative;
+            }
+        </style>
+    </head>
+
+    <body class="selection:bg-sky-500/30">
+        <nav class="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+            <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+                <a href="https://wslstack.pages.dev/" class="flex items-center text-sm font-bold text-slate-400 hover:text-white transition-colors">
+                    <svg class="me-1.5" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d='M19.5 12h-15m0 0 5.625-6M4.5 12l5.625 6'/></svg>
+                    Back To Home
+                </a>
+                <div class="px-3 py-1 rounded bg-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">Documentation</div>
+            </div>
+        </nav>
+
+        <main class="max-w-3xl mx-auto px-6 py-24">
+            <h1 class="text-4xl font-bold mb-4">Post-Setup Guide</h1>
+            <p class="text-slate-400 mb-12">Follow these steps to start developing after running the install script.</p>
+
+            <section class="mb-16">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-slate-950 font-bold text-sm">1</span>
+                    <h2 class="text-xl font-bold">Refresh Environment</h2>
+                </div>
+                <p class="text-slate-400 mb-4">Your bash profile has been updated with new paths for NVM, Bun, and Composer. Refresh your current session:</p>
+                <div class="code-block">source ~/.bashrc</div>
+            </section>
+
+            <section class="mb-16">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-slate-950 font-bold text-sm">2</span>
+                    <h2 class="text-xl font-bold">Database Access</h2>
+                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-mono">Native Auth</span>
+                </div>
+                <p class="text-slate-400 mb-4">The script creates a MySQL user matching your Linux username. You can log in using your Linux password:</p>
+                <div class="code-block mb-4">mysql -u $(whoami) -p</div>
+                <div class="p-4 bg-amber-500/5 border border-amber-500/10 rounded-lg">
+                    <p class="text-xs text-amber-200/70 italic"><strong>Note:</strong> phpMyAdmin is available at <a class="text-sky-400" href="http://localhost/phpmyadmin" target="_blank">http://localhost/phpmyadmin</a> with automatic login enabled for development convenience.</p>
+                </div>
+            </section>
+
+            <section class="mb-16">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-slate-950 font-bold text-sm">3</span>
+                    <h2 class="text-xl font-bold">Modern Tooling</h2>
+                </div>
+                <p class="text-slate-400 mb-4">Your environment is pre-loaded with the latest development tools:</p>
+                <ul class="space-y-3 text-sm text-slate-300">
+                    <li class="flex items-center gap-2"><span class="text-sky-500">•</span> <strong>Bun:</strong> Fast JS runtime (run <code class="text-sky-400">bun --version</code>)</li>
+                    <li class="flex items-center gap-2"><span class="text-sky-500">•</span> <strong>GH CLI:</strong> Authenticate GitHub via <code class="text-sky-400">gh auth login</code></li>
+                    <li class="flex items-center gap-2"><span class="text-sky-500">•</span> <strong>Laravel:</strong> Global installer ready via <code class="text-sky-400">laravel new app-name</code></li>
+                </ul>
+            </section>
+
+            <footer class="pt-12 border-t border-slate-900 text-center">
+                <p class="text-xs text-slate-600">WSLStack Documentation &copy; 2026</p>
+            </footer>
+        </main>
+    </body>
+
+</html>
