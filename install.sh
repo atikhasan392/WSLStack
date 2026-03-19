@@ -103,6 +103,7 @@ PHP_PACKAGES=(
     php8.5-dom php8.5-gd php8.5-mbstring php8.5-mysql
     php8.5-xml php8.5-zip php8.5-intl php8.5-readline
     php8.5-redis php8.5-msgpack php8.5-igbinary
+    php8.5-sqlite3 php8.5-pgsql php8.5-sqlsrv
 )
 
 echo "→ Installing PHP 8.5 packages..."
